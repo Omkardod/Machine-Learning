@@ -1,0 +1,51 @@
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+from sklearn.datasets import make_regression
+
+# Generate sample dataset
+X_data, y_data = make_regression(n_samples=100, n_features=5, noise=0.1, random_state=42)
+X = pd.DataFrame(X_data, columns=[f"Feature_{i}" for i in range(1, 6)])
+y = pd.Series(y_data)
+
+def stepwise_selection(X, y):
+    selected_features = []
+    remaining_features = list(X.columns)
+    
+    while True:
+        best_aic = float('inf')
+        best_feature = None
+        worst_feature = None
+
+        # Forward Step: Add the best feature
+        for feature in remaining_features:
+            X_selected = sm.add_constant(X[selected_features + [feature]])
+            model = sm.OLS(y, X_selected).fit()
+            if model.aic < best_aic:
+                best_aic = model.aic
+                best_feature = feature
+
+        if best_feature:
+            selected_features.append(best_feature)
+            remaining_features.remove(best_feature)
+
+        # Backward Step: Remove the worst feature
+        if len(selected_features) > 1:  # Ensure there are features to remove
+            X_selected = sm.add_constant(X[selected_features])
+            model = sm.OLS(y, X_selected).fit()
+            worst_pval = model.pvalues[1:].max()
+            
+            if worst_pval > 0.05:  # If a predictor is not significant, remove it
+                worst_feature = model.pvalues[1:].idxmax()
+                selected_features.remove(worst_feature)
+
+        if not best_feature and not worst_feature:
+            break  # Stop when no more changes occur
+    
+    return selected_features
+
+# Run stepwise selection
+best_features = stepwise_selection(X, y)
+
+# Print results
+print("Best Features:", best_features)
