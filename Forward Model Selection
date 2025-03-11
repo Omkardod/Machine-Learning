@@ -1,0 +1,35 @@
+import statsmodels.api as sm
+from itertools import combinations
+import numpy as np
+import pandas as pd
+
+# Generate Sample Data
+np.random.seed(42)
+X = pd.DataFrame(np.random.randn(100, 3), columns=['X1', 'X2', 'X3'])
+y = 2 * X['X1'] + 3 * X['X2'] + np.random.randn(100)
+
+# Forward Selection Function
+def forward_selection(X, y):
+    selected_features = []
+    remaining_features = list(X.columns)
+    best_models = []
+    
+    while remaining_features:
+        best_score = float('inf')
+        best_feature = None
+        for feature in remaining_features:
+            X_selected = sm.add_constant(X[selected_features + [feature]])
+            model = sm.OLS(y, X_selected).fit()
+            if model.aic < best_score:  # Using AIC for model selection
+                best_score = model.aic
+                best_feature = feature
+        if best_feature:
+            selected_features.append(best_feature)
+            remaining_features.remove(best_feature)
+            best_models.append((selected_features[:], best_score))
+    
+    return best_models[-1]  # Return the best model found
+
+best_model = forward_selection(X, y)
+print("Best Features:", best_model[0])
+print("AIC Score:", best_model[1])
