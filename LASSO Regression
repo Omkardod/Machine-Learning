@@ -1,0 +1,39 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import Lasso, LinearRegression
+from sklearn.datasets import make_regression
+
+# Create a synthetic regression dataset with 100 samples and 5 features
+X, y = make_regression(n_samples=100, n_features=5, noise=10, random_state=42)
+
+# Fit an ordinary least squares (OLS) model for comparison
+ols = LinearRegression().fit(X, y)
+ols_coefs = ols.coef_
+print("OLS Coefficients:", ols_coefs)
+
+# Define a range of alpha values (regularization strength) for Lasso
+# Note: We avoid alpha=0 because Lasso with alpha=0 isn't recommended;
+# instead, a very small alpha approximates the OLS solution.
+alphas = [0.001, 0.01, 0.1, 1, 10, 100]
+lasso_coefs = {}
+
+# Fit Lasso regression for each alpha value and store the coefficients
+for alpha in alphas:
+    lasso = Lasso(alpha=alpha, fit_intercept=True, max_iter=10000)
+    lasso.fit(X, y)
+    lasso_coefs[alpha] = lasso.coef_
+    print(f"Lasso Coefficients with alpha={alpha}: {lasso.coef_}")
+
+# Plotting the coefficients as a function of alpha (using a logarithmic scale)
+plt.figure(figsize=(8,6))
+for feature_idx in range(X.shape[1]):
+    # Extract coefficient values for each feature across alphas
+    coef_values = [lasso_coefs[alpha][feature_idx] for alpha in alphas]
+    plt.plot(alphas, coef_values, marker='o', label=f'Feature {feature_idx}')
+    
+plt.xscale('log')
+plt.xlabel('alpha (regularization strength)')
+plt.ylabel('Coefficient Value')
+plt.title('Lasso Regression Coefficients vs. Alpha')
+plt.legend()
+plt.show()
